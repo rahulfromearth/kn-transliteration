@@ -11,11 +11,15 @@ input {
     max-width: 850px;
 }
 
-.transliterations {
+.transliteration {
+  padding: 1rem;
+}
+
+.transliterationOptions {
   display: flex;
   justify-content: space-evenly;
   border: 1px solid black;
-  height: 1.5rem;
+  height: 2.5rem;
   align-items: center;
   background-color: gray;
 }
@@ -24,10 +28,10 @@ input {
   background-color: black;
   color: white;
   min-width: 2rem;
+  padding: 0.0625rem 0.35rem;
   cursor: pointer;
   justify-content: center;
   border-radius: 5px;
-  height: 1.25rem;
   align-items: center;
   display: flex;
 }
