@@ -94,6 +94,9 @@ function App() {
   };
 
   const [possibleTranslits, setPossibleTranslits] = useState<string[][]>([[]]);
+  const [wordIndex, setWordIndex] = useState(0);
+  const [userTranslits, setUserTranslits] = useState<string[]>([]);
+
 
   // https://gist.github.com/cybercase/db7dde901d7070c98c48
   function arrayProduct(...arrays: string[][][]) {
@@ -113,27 +116,41 @@ function App() {
     // TODO trim before transliterate
     // console.log('transliterating');
 
-    const ts = input.split(' ').map(word => transliterate(word));
-    const allTransliterations = ts.map(t => arrayProduct(t));
+    const allTransliterations = input.split(' ').map(word => arrayProduct(transliterate(word)));
 
     // TODO use index to select from all
     setPossibleTranslits(allTransliterations);
 
+    setUserTranslits(allTransliterations.map((tl) => tl[0]));
+
     // console.log(input, ts);
     // console.log(ts);
-    // console.log(ts.map(t => arrayProduct(t)));
+    console.log(allTransliterations);
   }
 
+  // geeta 
+  // car
+  //  rahul
+
+  // TODO add hover info
   return (
     <div>
+      <h1 style={{ textAlign: 'center' }}>English to Kannada Transliteration</h1>
       <div className="transliteration">
         {/* TODO fix this */}
-        {input.split(' ').map((word, i) => <span key={i}>{word}</span>)}
+        {userTranslits.map((word, i) =>
+          <span
+            key={i}
+            className="txSpan"
+            onClick={() => setWordIndex(i)}>
+            {word}
+          </span>
+        )}
       </div>
       <br />
       <div className="transliterationOptions">
         {/* TODO fix the large number of transliterations being generated */}
-        {possibleTranslits[0].slice(0, 5).map((t, index) =>
+        {possibleTranslits[wordIndex]?.slice(0, 5).map((t, index) =>
           <span
             key={index}
             // onClick={() => setWord(t)} 
@@ -158,24 +175,28 @@ function App() {
         />
       </div>
 
-      <button type="button" onClick={transliterateOnClick}>Transliterate</button>
+      <div className="buttonDiv">
+        <button type="button" onClick={transliterateOnClick}>Transliterate</button>
+      </div>
 
       {
         isInputFocused && (
-          <Keyboard
-            keyboardRef={r => (keyboard.current = r)}
-            layoutName={layoutName}
-            layout={layout}
-            display={{
-              "{capslock}": "caps lock ⇪",
-            }}
-            onChange={onChange}
-            // onKeyPress={onKeyPress}
-            physicalKeyboardHighlight={true}
-            mergeDisplay={true}
-          />)
+          <div className="keyboardDiv">
+            <Keyboard
+              keyboardRef={r => (keyboard.current = r)}
+              layoutName={layoutName}
+              layout={layout}
+              display={{
+                "{capslock}": "caps lock ⇪",
+              }}
+              onChange={onChange}
+              // onKeyPress={onKeyPress}
+              physicalKeyboardHighlight={true}
+              mergeDisplay={true}
+            />
+          </div>
+        )
       }
-
     </div>
   );
 }

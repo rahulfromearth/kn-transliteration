@@ -171,6 +171,16 @@ const _isoConsonants = {
 
 const mapConsonants = mapIsoToKannada(_isoConsonants);
 
+// TODO map th -> t
+
+// this is my school. rashmi g.. autocomplete
+// weightage to more names . 
+/*geetha gita githa getha
+word distance - levenshtein distance
+
+
+wrong  */
+
 const consonants = {
     'k': mapConsonants(['k', 'kh',]),
     'kh': mapConsonants(['k', 'kh',]),
@@ -191,7 +201,7 @@ const consonants = {
 
     // '': mapConsonants(['ñ',]),
 
-    'n': mapConsonants(['ṇ', 'n',]),
+    'n': mapConsonants(['n',]),
 
     't': mapConsonants(['ṭ', 'ṭh', 't', 'th',]),
 
@@ -217,6 +227,10 @@ const consonants = {
 
 
     'h': mapConsonants(['h',]),
+
+    // z
+
+    // x
 
 };
 
