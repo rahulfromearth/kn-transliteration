@@ -1,0 +1,54 @@
+body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    color: #444444;
+    font-size: 9pt;
+    background-color: #FAFAFA;
+}
+
+.inputDiv {
+    display: flex;
+}
+
+.textArea {
+    padding: 1rem;
+    max-width: 100%;
+    line-height: 1.5;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-shadow: 1px 1px 1px #999;
+    flex: 1;
+    /* Unresizable */
+    resize: none;
+}
+
+.menuDiv {
+    position: absolute;
+    min-width: 5rem;
+    box-shadow: 2px 2px 1px #888;
+    z-index: 9999;
+    border: 1px solid gray;
+    background-color: white;
+    right: unset;
+    display: none;
+}
+
+.menuDiv[style] {
+    display: block;
+}
+
+.popupDiv {
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.inputText {
+    border-bottom: 1px solid gray;
+}
+
+.selected {
+    background-color: #d8d8d8;
+}
+
+.hidden {
+    display: none;
+}
