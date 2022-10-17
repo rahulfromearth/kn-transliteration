@@ -5,16 +5,14 @@
       "es6",
       "dom"
     ],
+    "module": "es6",
+    "moduleResolution": "node",
     "allowJs": true,
-    "outDir": "public/js",
-    "rootDir": "src",
+    "outDir": "dist",
     "strict": true,
     "noImplicitAny": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "removeComments": true,
-  },
-  "files": [
-    "src/index.ts"
-  ]
+  }
 }
