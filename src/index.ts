@@ -2,11 +2,28 @@
 import { words } from './transliterate';
 import { getWord } from './utils';
 
+/**
+ * HTML elements
+ */
 const inputTextArea = document.getElementById('inputArea') as HTMLDivElement;
 
 const menuDiv = document.getElementById('menuDiv') as HTMLDivElement;
 const menuWord = document.getElementById('menuWord') as HTMLDivElement;
-const suggestionDivs = document.getElementById('suggestions')!.children;
+const suggestionDivs = document.getElementById('suggestions') as HTMLDivElement;
+
+/**
+ * Global constants
+ */
+const MAX_SUGGESTIONS = 5; // We show max 5 suggestions in the menu
+
+/**
+ * Global variables
+ */
+let currentWord: string;
+let currentSuggestions: string[];
+let selectedIndex = 0;
+
+
 
 // let caretPosition = getCaretCharacterOffsetWithin(inputTextArea);
 
@@ -55,114 +72,107 @@ function getCaretCharacterOffsetWithin(element: HTMLDivElement) {
 }
 
 // https://stackoverflow.com/questions/19038070/html-newline-char-in-div-content-editable
-function menuStyling() {
-    // const alphaNumeric = /[a-z0-9]/i
-    // lastChar.match(alphaNumeric)
+function showPopupMenu() {
+    const caretGlobalPosition = getCaretGlobalPosition();
+    menuDiv.style.cssText = `display: block;` +
+        `top: ${caretGlobalPosition.top}px;` +
+        `left: ${caretGlobalPosition.left}px;`;
+}
 
-    // without css white-space: pre, nbsp are used instead of space
-    // last character is always \n using pre-line
-    // HTML/CSS/JS is the worst technology ever created
-
-    // not using innerHTML
-    // cursor - 1
-
-
-    const inputText = inputTextArea.textContent || "";
-    const lastChar = inputText.at(-1) || ' ';
-
-    // console.log(caretPosition, inputText);
-    // console.log(inputText[caretPosition - 1], inputText.at(-1), 'end');
-    // console.log();
+function hidePopupMenu() {
+    menuDiv.style.cssText = "display: none;";
+}
 
 
-    if (!lastChar.match(/\s/)) {
-        const caretGlobalPosition = getCaretGlobalPosition();
+function updatePopupMenu() {
+    // innerContent is not supported in old browsers
+    menuWord.innerText = currentWord;
 
-        menuDiv.style.cssText = `display: block;` +
-            `top: ${caretGlobalPosition.top}px;` +
-            `left: ${caretGlobalPosition.left}px;`;
+    // TODO remove slice and let API handle it
+    const englishSuggestions = Object.keys(words)
+        .filter(w => currentWord &&
+            w.toLowerCase().startsWith(currentWord.toLowerCase()) &&
+            (w.length - currentWord.length < 3))
+        .slice(0, MAX_SUGGESTIONS);
+
+    currentSuggestions = englishSuggestions
+        .map(e => words[e])
+        .flat()
+        .slice(0, MAX_SUGGESTIONS);
+
+    suggestionDivs.innerHTML = '';
+    currentSuggestions.forEach((currentSuggestion, i) => {
+        const div = document.createElement('div');
+        div.setAttribute('class', 'popupDiv');
+
+        const p = document.createElement('p');
+        if (i == 0) {
+            p.setAttribute('class', 'selected suggestion');
+        } else {
+            p.setAttribute('class', 'suggestion');
+        }
+
+        p.innerText = currentSuggestion;
+
+        div.appendChild(p);
+
+        suggestionDivs.appendChild(div);
+    })
+
+    // if (suggestions.length &&
+    //     currentWord.toLowerCase() === englishSuggestions[0].toLowerCase()) {
+    //     // this.innerHTML = `${suggestions[0]} ${this.innerHTML.split(' ').slice(0, -1).join(' ')}`
+    //     console.log('setting', suggestions[0]);
+    // }
+
+}
+
+function setCurrentWord(event: Event) {
+    // check if there's any non-whitespace text and then set current word
+    if (
+        inputTextArea.textContent?.trim() &&
+        (currentWord = getWord())
+    ) {
+        // console.log(currentWord)
+        // update popup menu only if current word is non-empty / undefined
+        updatePopupMenu();
+        showPopupMenu();
     } else {
-        menuDiv.style.cssText = "display: none;";
+        // console.log('hiding')
+        hidePopupMenu();
     }
 }
 
 
 
-// inputTextArea.addEventListener('click',
-//     (event: MouseEvent) => {
-//         // console.log(cursorPosition);
-// getWord();
-//     }
-// )
+function handleArrowKeys(event: KeyboardEvent) {
 
-
-let currentWord: string;
-
-function setCurrentWord() {
-    currentWord = getWord();
-    console.log('setting curr word', currentWord);
-
-}
-
-inputTextArea.addEventListener('input', setCurrentWord)
-inputTextArea.addEventListener('click', setCurrentWord)
-
-
-inputTextArea.addEventListener('input', menuStyling)
-
-
-function onTextAreaChange(this: HTMLDivElement, event: KeyboardEvent) {
-
-    // const cursorPosition = this.selectionStart;
-    // const prevCurPos = cursorPosition - 1;
-
-    // const showMenu = prevCurPos >= 0 && this.value[prevCurPos] !== ' ';
-
-    // this.focus();
-    // this.setSelectionRange(previousCaretPos, previousCaretPos);
-
-    if (this.textContent) {
-
-        const inputWordArray = this.innerText.split(/\s/);
-
-        const lastWord = inputWordArray.at(-1) || "";
-        menuWord.textContent = lastWord;
-
-        const englishSuggestions = Object.keys(words).filter(
-            w => lastWord &&
-                w.startsWith(lastWord) &&
-                (w.length - lastWord.length < 3)
-        );
-
-        const suggestions = englishSuggestions.map(e => words[e]).flat();
-
-        for (let i = 0; i < suggestionDivs.length; ++i) {
-            if (i < suggestions.length) {
-                suggestionDivs[i].innerHTML = suggestions[i];
-            } else {
-                suggestionDivs[i].innerHTML = '';
-                // TODO hide divs
-            }
+    // TODO switch between choices
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        const currArrLen = (currentSuggestions?.length - 1) >= 0 ? currentSuggestions.length - 1 : 0;
+        switch (event.key) {
+            case 'ArrowUp':
+                selectedIndex = selectedIndex === 0 ?
+                    currArrLen :
+                    (selectedIndex - 1);
+                break;
+            case 'ArrowDown':
+                selectedIndex =
+                    selectedIndex === currArrLen ?
+                        0 :
+                        (selectedIndex + 1);
+                break;
         }
-
-        if (event.key === ' ') {
-            console.log("space");
-
-            if (suggestions.length &&
-                lastWord.toLowerCase() === englishSuggestions[0].toLowerCase()) {
-                // this.innerHTML = `${suggestions[0]} ${this.innerHTML.split(' ').slice(0, -1).join(' ')}`
-                console.log('setting', suggestions[0]);
-            }
-
-        }
-    } else {
-        console.log('NO-OP');
+        console.log('key:', event.key, selectedIndex);
+        event.preventDefault();
 
     }
+
+
+    // console.log(selectedIndex);
 
     // https://stackoverflow.com/questions/3216013/get-the-last-item-in-an-array
 
-    // TODO slice(0, 5) if more elems
     // TODO correct word before transliterating
     // TODO make this an API ?
 
@@ -174,7 +184,6 @@ function onTextAreaChange(this: HTMLDivElement, event: KeyboardEvent) {
     // TODO make this scalable
     // TODO selected word
 
-    // console.log(lastWord, englishSuggestions, suggestions);
 
 
     // previousCaretPos += 10;
@@ -183,7 +192,17 @@ function onTextAreaChange(this: HTMLDivElement, event: KeyboardEvent) {
 
 
 
-inputTextArea.addEventListener('keyup', onTextAreaChange);
+
+
+
+inputTextArea.addEventListener('keydown', handleArrowKeys)
+
+inputTextArea.addEventListener('input', setCurrentWord)
+inputTextArea.addEventListener('keyup', setCurrentWord)
+
+
+inputTextArea.addEventListener('click', setCurrentWord)
+
 // inputTextArea.addEventListener('keypress', onTextAreaChange);
 
 
