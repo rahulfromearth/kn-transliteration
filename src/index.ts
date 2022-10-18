@@ -1,4 +1,3 @@
-
 import { words } from './transliterate';
 import { getWord } from './utils';
 
@@ -74,6 +73,7 @@ function getCaretCharacterOffsetWithin(element: HTMLDivElement) {
 // https://stackoverflow.com/questions/19038070/html-newline-char-in-div-content-editable
 function showPopupMenu() {
     const caretGlobalPosition = getCaretGlobalPosition();
+    selectedIndex = 0;
     menuDiv.style.cssText = `display: block;` +
         `top: ${caretGlobalPosition.top}px;` +
         `left: ${caretGlobalPosition.left}px;`;
@@ -100,6 +100,7 @@ function updatePopupMenu() {
         .flat()
         .slice(0, MAX_SUGGESTIONS);
 
+    // TODO improve this code
     suggestionDivs.innerHTML = '';
     currentSuggestions.forEach((currentSuggestion, i) => {
         const div = document.createElement('div');
@@ -128,10 +129,17 @@ function updatePopupMenu() {
 }
 
 function setCurrentWord(event: Event) {
+    if (event.type === 'keyup') {
+        const key = (event as KeyboardEvent).key
+        if (key === 'ArrowUp' || key === 'ArrowDown') {
+            return;
+        }
+    }
     // check if there's any non-whitespace text and then set current word
     if (
-        inputTextArea.textContent?.trim() &&
-        (currentWord = getWord())
+        inputTextArea.innerText?.trim() &&
+        (currentWord = getWord()) &&
+        currentWord.trim()
     ) {
         // console.log(currentWord)
         // update popup menu only if current word is non-empty / undefined
@@ -144,28 +152,35 @@ function setCurrentWord(event: Event) {
 }
 
 
-
 function handleArrowKeys(event: KeyboardEvent) {
-
-    // TODO switch between choices
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-        const currArrLen = (currentSuggestions?.length - 1) >= 0 ? currentSuggestions.length - 1 : 0;
+        const currArrLen = currentSuggestions?.length > 0 ?
+            currentSuggestions.length - 1 :
+            0;
         switch (event.key) {
             case 'ArrowUp':
                 selectedIndex = selectedIndex === 0 ?
-                    currArrLen :
+                    selectedIndex :
                     (selectedIndex - 1);
                 break;
             case 'ArrowDown':
                 selectedIndex =
                     selectedIndex === currArrLen ?
-                        0 :
+                        selectedIndex :
                         (selectedIndex + 1);
                 break;
         }
         console.log('key:', event.key, selectedIndex);
         event.preventDefault();
-
+        const suggestions = suggestionDivs.children;
+        for (let i = 0; i < suggestions.length; ++i) {
+            const p = suggestions[i].firstChild! as HTMLParagraphElement
+            if (selectedIndex === i) {
+                p.setAttribute('class', 'selected suggestion')
+            } else {
+                p.setAttribute('class', 'suggestion')
+            }
+        }
     }
 
 
@@ -188,12 +203,6 @@ function handleArrowKeys(event: KeyboardEvent) {
 
     // previousCaretPos += 10;
 }
-
-
-
-
-
-
 
 inputTextArea.addEventListener('keydown', handleArrowKeys)
 
