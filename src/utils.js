@@ -1,3 +1,35 @@
+export function doGetCaretPosition() {
+    var caretPosition = undefined;
+    if (window.getSelection) {
+        // Standard
+        return window.selectionStart;
+    }
+    else if (document.selection) {
+        // Legacy IE
+        ctrl.focus();
+        var sel = document.selection.createRange();
+        sel.moveStart('character', -ctrl.value.length);
+        caretPosition = sel.text.length;
+    }
+    return caretPosition;
+}
+
+
+export function setCaretPosition(ctrl, pos) {
+    if (ctrl.setSelectionRange) {
+        ctrl.focus();
+        ctrl.setSelectionRange(pos, pos);
+    }
+    else if (ctrl.createTextRange) {
+        var range = ctrl.createTextRange();
+        range.collapse(true);
+        range.moveEnd('character', pos);
+        range.moveStart('character', pos);
+        range.select();
+    }
+}
+
+
 // I'm not fixing this
 export function getWord() {
     var sel, word = "";

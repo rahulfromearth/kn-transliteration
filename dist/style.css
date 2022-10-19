@@ -16,7 +16,7 @@ body {
     /* Unresizable */
     resize: none;
     /* Fix for &nbsp; */
-    white-space: pre-line;
+    white-space: pre;
     font-size: 1.5rem;
 }
 
@@ -40,6 +40,7 @@ body {
     padding: 0.5rem;
     text-align: center;
     color: black;
+    /* min-width: 8rem; */
 }
 
 .menuWord {
@@ -52,6 +53,12 @@ body {
 
 .suggestion {
     margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.suggestion span {
     padding: 0 1rem;
 }
 

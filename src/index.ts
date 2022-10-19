@@ -1,5 +1,5 @@
 import { words } from './transliterate';
-import { getWord } from './utils';
+import { doGetCaretPosition, getWord, setCaretPosition } from './utils';
 
 /**
  * HTML elements
@@ -18,7 +18,7 @@ const MAX_SUGGESTIONS = 5; // We show max 5 suggestions in the menu
 /**
  * Global variables
  */
-let currentWord: string;
+let currentWord: string = "";
 
 type CorrectedEn = string;
 type TransliteratedKn = string;
@@ -77,6 +77,7 @@ function getCaretCharacterOffsetWithin(element: HTMLDivElement) {
 
 // https://stackoverflow.com/questions/19038070/html-newline-char-in-div-content-editable
 function showPopupMenu() {
+    // TODO handle state  of menu
     const caretGlobalPosition = getCaretGlobalPosition();
     selectedIndex = 0;
     menuDiv.style.cssText = `display: block;` +
@@ -121,9 +122,13 @@ function updatePopupMenu() {
         }
         const [en, kn] = currentSuggestion;
 
-        console.log(currentSuggestion)
+        const enSpan = document.createElement('span');
+        enSpan.innerText = en;
+        p.appendChild(enSpan);
 
-        p.innerText = kn;
+        const knSpan = document.createElement('span');
+        knSpan.innerText = kn;
+        p.appendChild(knSpan);
 
         div.appendChild(p);
 
@@ -139,9 +144,21 @@ function updatePopupMenu() {
 }
 
 function setCurrentWord(event: Event) {
+    // if (event.type === 'click') {
+    //     console.log((event as MouseEvent).target);
+    // }
+    if (event.type === 'click' &&
+        (event as MouseEvent).target !== inputTextArea) {
+        hidePopupMenu();
+        return;
+    }
+
     if (event.type === 'keyup') {
         const key = (event as KeyboardEvent).key
-        if (key === 'ArrowUp' || key === 'ArrowDown') {
+        if (key === 'ArrowUp' ||
+            key === 'ArrowDown' ||
+            key === 'Enter' ||
+            key === 'Tab') {
             return;
         }
     }
@@ -162,39 +179,62 @@ function setCurrentWord(event: Event) {
 }
 
 
-function handleArrowKeys(event: KeyboardEvent) {
-    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+function handleSpecialKeys(event: KeyboardEvent) {
+    // console.log('key:', event.key, selectedIndex);
+    event.preventDefault();
+    const key = event.key;
+
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
         const currArrLen = currentSuggestions?.length > 0 ?
             currentSuggestions.length - 1 :
             0;
-        switch (event.key) {
-            case 'ArrowUp':
-                selectedIndex = selectedIndex === 0 ?
-                    selectedIndex :
-                    (selectedIndex - 1);
-                break;
-            case 'ArrowDown':
-                selectedIndex =
-                    selectedIndex === currArrLen ?
+        if (currentSuggestions.length > 1) {
+            // only update if number of suggestions > 1
+            switch (key) {
+                case 'ArrowUp':
+                    selectedIndex = selectedIndex === 0 ?
                         selectedIndex :
-                        (selectedIndex + 1);
-                break;
-        }
-        console.log('key:', event.key, selectedIndex);
-        event.preventDefault();
-        const suggestions = suggestionDivs.children;
-        for (let i = 0; i < suggestions.length; ++i) {
-            const p = suggestions[i].firstChild! as HTMLParagraphElement
-            if (selectedIndex === i) {
-                p.setAttribute('class', 'selected suggestion')
-            } else {
-                p.setAttribute('class', 'suggestion')
+                        (selectedIndex - 1);
+                    break;
+                case 'ArrowDown':
+                    selectedIndex =
+                        selectedIndex === currArrLen ?
+                            selectedIndex :
+                            (selectedIndex + 1);
+                    break;
+            }
+
+            // update menu selection
+            const suggestions = suggestionDivs.children;
+            for (let i = 0; i < suggestions.length; ++i) {
+                const p = suggestions[i].firstChild! as HTMLParagraphElement
+                if (selectedIndex === i) {
+                    p.setAttribute('class', 'selected suggestion')
+                } else {
+                    p.setAttribute('class', 'suggestion')
+                }
             }
         }
+    } else if (key === 'Enter' || key === 'Tab' || key === ' ') {
+
+        inputTextArea.innerText += currentWord + " "
+        currentWord = ""
+        if (currentSuggestions.length) {
+            // console.log(currentSuggestions, currentSuggestions[selectedIndex])
+
+        }
+        hidePopupMenu();
+    } else if (key.length === 1 && (/[A-Za-z]/.test(key))) {
+        // TODO handle other characters
+        console.log(`'${inputTextArea.innerHTML}'`, `'${key}'`)
+        currentWord += key
+
+        updatePopupMenu();
+        showPopupMenu();
+
     }
 
-
-    // console.log(selectedIndex);
+    // other keydown events will propagate
 
     // https://stackoverflow.com/questions/3216013/get-the-last-item-in-an-array
 
@@ -204,23 +244,19 @@ function handleArrowKeys(event: KeyboardEvent) {
     // TODO handle go back and edit prev word
 
     // TODO keep track of current word
-    // TODO change this on click
 
     // TODO make this scalable
-    // TODO selected word
-
-
 
     // previousCaretPos += 10;
 }
 
-inputTextArea.addEventListener('keydown', handleArrowKeys)
-
-inputTextArea.addEventListener('input', setCurrentWord)
-inputTextArea.addEventListener('keyup', setCurrentWord)
 
 
-inputTextArea.addEventListener('click', setCurrentWord)
+inputTextArea.addEventListener('keydown', handleSpecialKeys)
+
+// inputTextArea.addEventListener('keyup', setCurrentWord)
+
+window.addEventListener('click', setCurrentWord)
 
 // inputTextArea.addEventListener('keypress', onTextAreaChange);
 
