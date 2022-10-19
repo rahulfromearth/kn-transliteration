@@ -1,8 +1,8 @@
-export function doGetCaretPosition() {
+export function doGetCaretPosition(el) {
     var caretPosition = undefined;
-    if (window.getSelection) {
+    if (el.getSelection) {
         // Standard
-        return window.selectionStart;
+        return el.selectionStart;
     }
     else if (document.selection) {
         // Legacy IE

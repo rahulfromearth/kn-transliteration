@@ -1,10 +1,11 @@
 import { words } from './transliterate';
 import { doGetCaretPosition, getWord, setCaretPosition } from './utils';
 
+import getCaretCoordinates from 'textarea-caret';
 /**
  * HTML elements
  */
-const inputTextArea = document.getElementById('inputArea') as HTMLDivElement;
+const inputTextArea = document.getElementById('inputArea') as HTMLTextAreaElement;
 
 const menuDiv = document.getElementById('menuDiv') as HTMLDivElement;
 const menuWord = document.getElementById('menuWord') as HTMLDivElement;
@@ -79,6 +80,7 @@ function getCaretCharacterOffsetWithin(element: HTMLDivElement) {
 function showPopupMenu() {
     // TODO handle state  of menu
     const caretGlobalPosition = getCaretGlobalPosition();
+    console.log(caretGlobalPosition);
     selectedIndex = 0;
     menuDiv.style.cssText = `display: block;` +
         `top: ${caretGlobalPosition.top}px;` +
@@ -89,8 +91,23 @@ function hidePopupMenu() {
     menuDiv.style.cssText = "display: none;";
 }
 
+function convertRemToPixels(rem: number) {
+    return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+}
 
 function updatePopupMenu() {
+
+    const coordinates = getCaretCoordinates(inputTextArea, inputTextArea.selectionEnd);
+    menuDiv.style.display = 'block';
+    // inputTextArea.style.fontSize
+    const topPixels = inputTextArea.offsetTop - inputTextArea.scrollTop
+        + convertRemToPixels(1.5)
+
+    const leftPixels = inputTextArea.offsetLeft - inputTextArea.scrollLeft
+
+    menuDiv.style.top = topPixels + coordinates.top + 'px';
+    menuDiv.style.left = leftPixels + coordinates.left + 'px';
+
     // innerContent is not supported in old browsers
     menuWord.innerText = currentWord;
 
@@ -153,15 +170,6 @@ function setCurrentWord(event: Event) {
         return;
     }
 
-    if (event.type === 'keyup') {
-        const key = (event as KeyboardEvent).key
-        if (key === 'ArrowUp' ||
-            key === 'ArrowDown' ||
-            key === 'Enter' ||
-            key === 'Tab') {
-            return;
-        }
-    }
     // check if there's any non-whitespace text and then set current word
     if (
         inputTextArea.innerText?.trim() &&
@@ -179,7 +187,7 @@ function setCurrentWord(event: Event) {
 }
 
 
-function handleSpecialKeys(event: KeyboardEvent) {
+function handleSpecialKeys(this: HTMLTextAreaElement, event: KeyboardEvent) {
     // console.log('key:', event.key, selectedIndex);
     event.preventDefault();
     const key = event.key;
@@ -216,8 +224,12 @@ function handleSpecialKeys(event: KeyboardEvent) {
             }
         }
     } else if (key === 'Enter' || key === 'Tab' || key === ' ') {
+        console.log(key, this.innerText, currentWord)
 
-        inputTextArea.innerText += currentWord + " "
+        this.value += currentWord + " "
+
+        this.selectionStart = this.value.length;
+
         currentWord = ""
         if (currentSuggestions.length) {
             // console.log(currentSuggestions, currentSuggestions[selectedIndex])
@@ -226,11 +238,11 @@ function handleSpecialKeys(event: KeyboardEvent) {
         hidePopupMenu();
     } else if (key.length === 1 && (/[A-Za-z]/.test(key))) {
         // TODO handle other characters
-        console.log(`'${inputTextArea.innerHTML}'`, `'${key}'`)
+        console.log(key, `'${this.innerHTML}'`, `'${key}'`)
         currentWord += key
 
         updatePopupMenu();
-        showPopupMenu();
+        // showPopupMenu();
 
     }
 
@@ -251,13 +263,13 @@ function handleSpecialKeys(event: KeyboardEvent) {
 }
 
 
+// window.addEventListener('click', setCurrentWord)
 
 inputTextArea.addEventListener('keydown', handleSpecialKeys)
-
 // inputTextArea.addEventListener('keyup', setCurrentWord)
 
-window.addEventListener('click', setCurrentWord)
 
+// inputTextArea.addEventListener('input', setCurrentWord)
 // inputTextArea.addEventListener('keypress', onTextAreaChange);
 
 
