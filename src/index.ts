@@ -19,7 +19,12 @@ const MAX_SUGGESTIONS = 5; // We show max 5 suggestions in the menu
  * Global variables
  */
 let currentWord: string;
-let currentSuggestions: string[];
+
+type CorrectedEn = string;
+type TransliteratedKn = string;
+type Pair = [CorrectedEn, TransliteratedKn];
+let currentSuggestions: Array<Pair>;
+
 let selectedIndex = 0;
 
 
@@ -95,10 +100,12 @@ function updatePopupMenu() {
             (w.length - currentWord.length < 3))
         .slice(0, MAX_SUGGESTIONS);
 
-    currentSuggestions = englishSuggestions
-        .map(e => words[e])
-        .flat()
-        .slice(0, MAX_SUGGESTIONS);
+    currentSuggestions = (
+        englishSuggestions
+            .map(e => words[e].map(word => [e, word]))
+            .flat()
+            .slice(0, MAX_SUGGESTIONS) as Array<Pair>
+    );
 
     // TODO improve this code
     suggestionDivs.innerHTML = '';
@@ -112,8 +119,11 @@ function updatePopupMenu() {
         } else {
             p.setAttribute('class', 'suggestion');
         }
+        const [en, kn] = currentSuggestion;
 
-        p.innerText = currentSuggestion;
+        console.log(currentSuggestion)
+
+        p.innerText = kn;
 
         div.appendChild(p);
 

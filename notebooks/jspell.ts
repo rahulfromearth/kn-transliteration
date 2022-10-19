@@ -8,7 +8,11 @@
 /* 
 .load jspell.js
 nsc = new NorvigSpellChecker('big.txt')
-nsc.correct('spelling')
+nsc.curriedKnown(['test', 'word'], ['fail', 'sir'], ['arthur'])
+
+curry(nsc.known)(['test', 'word'], ['fail', 'sir'], ['arthur'])
+
+nsc.correct(2, 'spelling', 'splng')
 */
 
 const fs = require('fs');
@@ -18,8 +22,11 @@ type WordFreq = {
 }
 
 type CorrectedWord = {
-    [key: string]: string;
+    [key: string]: Array<string>;
 }
+
+// https://stackoverflow.com/a/35117049/6949755
+// https://stackoverflow.com/questions/12995153/apply-not-working-as-expected
 
 function isEmpty(object: WordFreq) {
     // iterate over keys in object prototype chain
@@ -105,6 +112,7 @@ class NorvigSpellChecker {
         return this.edits1(this.edits1(words));
     };
 
+    // nsc.known.apply(null, [['test', 'word'], ['fail', 'sir'], ['arthur']])
     known = (...wordsArrays: string[][]): WordFreq => {
         const knownSet: WordFreq = {};
         for (let i = 0; isEmpty(knownSet) && i < wordsArrays.length; ++i) {
@@ -119,16 +127,22 @@ class NorvigSpellChecker {
         return knownSet;
     };
 
-    max = (candidateValues: WordFreq): string => {
+    maxN = (candidateValues: WordFreq, n = 1): string[] => {
+        // const maxCandidate = Object.keys(candidateValues)
+        //     .reduce((prevCandidate, currCandidate) =>
+        //         candidateValues[prevCandidate] > candidateValues[currCandidate] ?
+        //             prevCandidate :
+        //             currCandidate);
+
         const maxCandidate = Object.keys(candidateValues)
-            .reduce((prevCandidate, currCandidate) =>
-                candidateValues[prevCandidate] > candidateValues[currCandidate] ?
-                    prevCandidate :
-                    currCandidate);
+            .sort((candidate1, candidate2) => {
+                return candidateValues[candidate1] - candidateValues[candidate2];
+            }).slice(-n);
+
         return maxCandidate;
     };
 
-    _correct = (...words: string[]) => {
+    correct = (n: number, ...words: string[]) => {
         const corrections: CorrectedWord = {};
         for (const word of words) {
             const candidates: WordFreq =
@@ -137,11 +151,21 @@ class NorvigSpellChecker {
                     this.edits1([word]),
                     this.edits2([word])
                 );
-            corrections[word] = isEmpty(candidates) ? word : this.max(candidates);
+            // set corrected word with max frequencies in corpus
+            corrections[word] = isEmpty(candidates) ? [word] : this.maxN(candidates, n);
         }
         return corrections;
     };
 
-    correct = curry<string, CorrectedWord>(this._correct);
-
 };
+
+const nsc = new NorvigSpellChecker('big.txt')
+// nsc.known(['test', 'word', 'fail', 'sir', 'arthur'])
+// curry(nsc.known)(['spllg'], ['spell'], ['spells'])
+
+// curry(nsc.known)(['xabel'], ['abel'], ['label']);
+// curry(nsc.known)(['xabel'], ['rabel'], ['label']);
+// curry(nsc.known)(['xabel'], ['rabel'], ['abel']);
+// curry(nsc.known)(['slxlag'], ['sllag'], ['slag']); // no slag in data
+
+// curry(nsc.known)(['test', 'word'], ['fail', 'sir'], ['arthur'])
