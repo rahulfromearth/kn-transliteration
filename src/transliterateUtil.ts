@@ -1,5 +1,7 @@
 import { schemaMap } from "./schemeMap";
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// const exports = {};
+// .load transliterateUtils.js
 function transliterate(data: string) {
 
     const buf: string[][] = [];
