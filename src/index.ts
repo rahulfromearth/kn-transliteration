@@ -1,7 +1,8 @@
-import { words } from './transliterate';
-import { doGetCaretPosition, getWord, setCaretPosition } from './utils';
+import { words } from './corpus';
+import { getWord } from './utils';
 
 import getCaretCoordinates from 'textarea-caret';
+import { transliterate } from './transliterateUtil';
 /**
  * HTML elements
  */
@@ -19,7 +20,7 @@ const MAX_SUGGESTIONS = 5; // We show max 5 suggestions in the menu
 /**
  * Global variables
  */
-let currentWord: string = "";
+let _currentWord = "";
 
 type CorrectedEn = string;
 type TransliteratedKn = string;
@@ -63,8 +64,7 @@ function getCaretCharacterOffsetWithin(element: HTMLDivElement) {
     let caretOffset = 0;
     const doc = element.ownerDocument;
     const win = doc.defaultView!;
-    let sel;
-    sel = win.getSelection()!;
+    const sel = win.getSelection()!;
     if (sel.rangeCount > 0) {
         const range = win.getSelection()!.getRangeAt(0);
         const preCaretRange = range.cloneRange();
@@ -80,7 +80,7 @@ function getCaretCharacterOffsetWithin(element: HTMLDivElement) {
 function showPopupMenu() {
     // TODO handle state  of menu
     const caretGlobalPosition = getCaretGlobalPosition();
-    console.log(caretGlobalPosition);
+    // console.log(caretGlobalPosition);
     selectedIndex = 0;
     menuDiv.style.cssText = `display: block;` +
         `top: ${caretGlobalPosition.top}px;` +
@@ -95,35 +95,56 @@ function convertRemToPixels(rem: number) {
     return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
 }
 
-function updatePopupMenu() {
+const TEXT_FONT_SIZE = convertRemToPixels(1.5)
+
+function updateMenu(word: string) {
+    _currentWord = word
+    if (word) {
+        _updatePopupMenu()
+    } else {
+        hidePopupMenu()
+    }
+}
+
+function _updatePopupMenu() {
 
     const coordinates = getCaretCoordinates(inputTextArea, inputTextArea.selectionEnd);
     menuDiv.style.display = 'block';
     // inputTextArea.style.fontSize
-    const topPixels = inputTextArea.offsetTop - inputTextArea.scrollTop
-        + convertRemToPixels(1.5)
-
+    const topPixels = inputTextArea.offsetTop - inputTextArea.scrollTop + TEXT_FONT_SIZE
     const leftPixels = inputTextArea.offsetLeft - inputTextArea.scrollLeft
 
     menuDiv.style.top = topPixels + coordinates.top + 'px';
     menuDiv.style.left = leftPixels + coordinates.left + 'px';
 
     // innerContent is not supported in old browsers
-    menuWord.innerText = currentWord;
+    menuWord.innerText = _currentWord;
 
+    // TODO refactor below with PROPER code
     // TODO remove slice and let API handle it
     const englishSuggestions = Object.keys(words)
-        .filter(w => currentWord &&
-            w.toLowerCase().startsWith(currentWord.toLowerCase()) &&
-            (w.length - currentWord.length < 3))
+        .filter(
+            w => _currentWord &&
+                w.toLowerCase() === _currentWord.toLowerCase()
+            // w.toLowerCase().startsWith(_currentWord.toLowerCase()) && (w.length - _currentWord.length < 3)
+        )
         .slice(0, MAX_SUGGESTIONS);
 
-    currentSuggestions = (
-        englishSuggestions
-            .map(e => words[e].map(word => [e, word]))
-            .flat()
+    if (englishSuggestions.length === 0) {
+        currentSuggestions = transliterate(_currentWord)
+            .map(kn => [_currentWord, kn])
             .slice(0, MAX_SUGGESTIONS) as Array<Pair>
-    );
+    } else {
+        /* :^)  maaduthidene is not working */
+        const trs = _currentWord.startsWith('m') ? (_: string) => [] : transliterate
+        currentSuggestions = (
+            englishSuggestions
+                // TODO fix transliterate return
+                .map(en => [...words[en], ...trs(en)].map(word => [en, word]))
+                .flat()
+                .slice(0, MAX_SUGGESTIONS) as Array<Pair>
+        );
+    }
 
     // TODO improve this code
     suggestionDivs.innerHTML = '';
@@ -153,7 +174,7 @@ function updatePopupMenu() {
     })
 
     // if (suggestions.length &&
-    //     currentWord.toLowerCase() === englishSuggestions[0].toLowerCase()) {
+    //     _currentWord.toLowerCase() === englishSuggestions[0].toLowerCase()) {
     //     // this.innerHTML = `${suggestions[0]} ${this.innerHTML.split(' ').slice(0, -1).join(' ')}`
     //     console.log('setting', suggestions[0]);
     // }
@@ -173,12 +194,12 @@ function setCurrentWord(event: Event) {
     // check if there's any non-whitespace text and then set current word
     if (
         inputTextArea.innerText?.trim() &&
-        (currentWord = getWord()) &&
-        currentWord.trim()
+        (_currentWord = getWord()) &&
+        _currentWord.trim()
     ) {
-        // console.log(currentWord)
+        // console.log(_currentWord)
         // update popup menu only if current word is non-empty / undefined
-        updatePopupMenu();
+        updateMenu(_currentWord);
         showPopupMenu();
     } else {
         // console.log('hiding')
@@ -187,7 +208,7 @@ function setCurrentWord(event: Event) {
 }
 
 
-function handleSpecialKeys(this: HTMLTextAreaElement, event: KeyboardEvent) {
+function updateTextArea(this: HTMLTextAreaElement, event: KeyboardEvent) {
     // console.log('key:', event.key, selectedIndex);
     event.preventDefault();
     const key = event.key;
@@ -224,38 +245,43 @@ function handleSpecialKeys(this: HTMLTextAreaElement, event: KeyboardEvent) {
             }
         }
     } else if (key === 'Enter' || key === 'Tab' || key === ' ') {
-        console.log(key, this.innerText, currentWord)
+        // console.log(key, this.innerText, _currentWord)
 
-        this.value += currentWord + " "
+        // TODO correct word before transliterating
+
+        this.value += getSuggestion() + " "
+
+        // console.log(transliterate(_currentWord));
 
         this.selectionStart = this.value.length;
+        _currentWord = ""
 
-        currentWord = ""
-        if (currentSuggestions.length) {
-            // console.log(currentSuggestions, currentSuggestions[selectedIndex])
+        // if (currentSuggestions.length) {
+        // console.log(currentSuggestions, currentSuggestions[selectedIndex])
 
-        }
+        // }
         hidePopupMenu();
+
     } else if (key.length === 1 && (/[A-Za-z]/.test(key))) {
         // TODO handle other characters
-        console.log(key, `'${this.innerHTML}'`, `'${key}'`)
-        currentWord += key
-
-        updatePopupMenu();
+        // console.log(key, `'${this.innerHTML}'`, `'${key}'`)
+        updateMenu(_currentWord + key);
         // showPopupMenu();
 
+    } else if (key === 'Backspace') {
+        if (_currentWord === "") {
+            this.value = this.value.slice(0, -1);
+        }
+        updateMenu(_currentWord.slice(0, -1));
     }
 
     // other keydown events will propagate
 
     // https://stackoverflow.com/questions/3216013/get-the-last-item-in-an-array
 
-    // TODO correct word before transliterating
     // TODO make this an API ?
 
     // TODO handle go back and edit prev word
-
-    // TODO keep track of current word
 
     // TODO make this scalable
 
@@ -265,7 +291,14 @@ function handleSpecialKeys(this: HTMLTextAreaElement, event: KeyboardEvent) {
 
 // window.addEventListener('click', setCurrentWord)
 
-inputTextArea.addEventListener('keydown', handleSpecialKeys)
+inputTextArea.addEventListener('keydown', updateTextArea)
+
+function getSuggestion() {
+    return currentSuggestions[selectedIndex] ?
+        currentSuggestions[selectedIndex][1] :
+        _currentWord;
+}
+
 // inputTextArea.addEventListener('keyup', setCurrentWord)
 
 

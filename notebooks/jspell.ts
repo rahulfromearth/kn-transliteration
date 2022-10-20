@@ -15,6 +15,7 @@ curry(nsc.known)(['test', 'word'], ['fail', 'sir'], ['arthur'])
 nsc.correct(2, 'spelling', 'splng')
 */
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const fs = require('fs');
 
 type WordFreq = {
@@ -36,7 +37,7 @@ function isEmpty(object: WordFreq) {
             return false;
     }
     return true;
-};
+}
 
 // https://stackoverflow.com/a/35117049/6949755
 function curry<T, U>(fn: Function): (...a: T[]) => U {
@@ -157,7 +158,7 @@ class NorvigSpellChecker {
         return corrections;
     };
 
-};
+}
 
 const nsc = new NorvigSpellChecker('big.txt')
 // nsc.known(['test', 'word', 'fail', 'sir', 'arthur'])

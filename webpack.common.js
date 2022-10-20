@@ -1,11 +1,8 @@
 const path = require('path');
-
-// https://stackoverflow.com/questions/67289563/how-do-i-get-readable-javascript-files-in-the-development-mode-of-webpack
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
     entry: './src/index.ts',
-    mode: 'development',
-    devtool: 'eval-source-map',
     module: {
         rules: [
             // convert Typescript to Javascript
@@ -36,8 +33,12 @@ module.exports = {
         // https://stackoverflow.com/a/44620578
         publicPath: "/dist/",
     },
-    watch: true,
-    watchOptions: {
-        aggregateTimeout: 200,
-    },
+    // copy styles and html from public
+    plugins: [
+        new CopyWebpackPlugin({
+            patterns: [
+                { from: 'public' }
+            ]
+        })
+    ],
 };
