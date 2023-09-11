@@ -1,8 +1,16 @@
 import { words } from './corpus';
+import freq_dist from './word_counts';
 import { getWord } from './utils';
 
 import getCaretCoordinates from 'textarea-caret';
+import { numerals } from './schemeMap';
 import { transliterate } from './transliterateUtil';
+
+import { NorvigSpellChecker } from './jspell';
+
+const spellCheck = new NorvigSpellChecker()
+
+
 /**
  * HTML elements
  */
@@ -15,16 +23,16 @@ const suggestionDivs = document.getElementById('suggestions') as HTMLDivElement;
 /**
  * Global constants
  */
-const MAX_SUGGESTIONS = 5; // We show max 5 suggestions in the menu
+const MAX_SUGGESTIONS = 7; // We show max 7 suggestions in the menu
 
 /**
  * Global variables
  */
 let _currentWord = "";
 
-type CorrectedEn = string;
+type InputEn = string;
 type TransliteratedKn = string;
-type Pair = [CorrectedEn, TransliteratedKn];
+type Pair = [InputEn, TransliteratedKn];
 let currentSuggestions: Array<Pair>;
 
 let selectedIndex = 0;
@@ -88,6 +96,7 @@ function showPopupMenu() {
 }
 
 function hidePopupMenu() {
+    selectedIndex = 0;
     menuDiv.style.cssText = "display: none;";
 }
 
@@ -99,11 +108,61 @@ const TEXT_FONT_SIZE = convertRemToPixels(1.5)
 
 function updateMenu(word: string) {
     _currentWord = word
+    selectedIndex = 0;
     if (word) {
         _updatePopupMenu()
     } else {
         hidePopupMenu()
     }
+}
+
+const enToKn: Record<string, string> = {
+    "a": "ಎ",
+    "b": "ಬಿ",
+    "c": "ಸಿ",
+    "d": "ಡಿ",
+    "e": "ಇ",
+    "f": "ಎಫ್",
+    "g": "ಜಿ",
+    "h": "ಎಚ್",
+    "i": "ಐ",
+    "j": "ಜೆ",
+    "k": "ಕೆ",
+    "l": "ಎಲ್",
+    "m": "ಎಮ್",
+    "n": "ಎನ್",
+    "o": "ಓ",
+    "p": "ಪಿ",
+    "q": "ಕ್ಯು",
+    "r": "ಆರ್",
+    "s": "ಎಸ್",
+    "t": "ಟಿ",
+    "u": "ಯು",
+    "v": "ವಿ",
+    "w": "ಡಬ್ಲ್ಯೂ",
+    "x": "ಎಕ್ಸ್",
+    "y": "ವೈ",
+    "z": "ಝೆಡ್"
+}
+
+function possibleSuggestions(englishWord: InputEn): TransliteratedKn[] {
+    // console.log('possible', englishWord);
+    const corpusTrans = words[englishWord] || []
+    // TODO fix transliterate return (return only some)
+    // TODO make tests to just run this against some inputs
+    const allFuncTrans = transliterate(englishWord);
+
+    // console.log(allFuncTrans);
+
+    const funcTrans = allFuncTrans.slice(0, 5);
+    const uniqWords = new Set<string>(
+        [...corpusTrans, ...funcTrans]
+            .slice(0, MAX_SUGGESTIONS - 1)
+    )
+
+    // const funcTrans = [transliterate(englishWord)];
+
+    return Array.from(uniqWords);
 }
 
 function _updatePopupMenu() {
@@ -122,29 +181,96 @@ function _updatePopupMenu() {
 
     // TODO refactor below with PROPER code
     // TODO remove slice and let API handle it
-    const englishSuggestions = Object.keys(words)
-        .filter(
-            w => _currentWord &&
-                w.toLowerCase() === _currentWord.toLowerCase()
-            // w.toLowerCase().startsWith(_currentWord.toLowerCase()) && (w.length - _currentWord.length < 3)
-        )
-        .slice(0, MAX_SUGGESTIONS);
 
-    if (englishSuggestions.length === 0) {
-        currentSuggestions = transliterate(_currentWord)
+    // const englishSuggestions = new Set<string>();
+
+    // TODO first transliterate incorrect English spelling or 
+
+    // TODO remove below line
+    // Add words from corpus
+
+    // Object.keys(words)
+    //     .filter(
+    //         w => _currentWord &&
+    //             w.toLowerCase() === _currentWord.toLowerCase()
+    //         // w.toLowerCase().startsWith(_currentWord.toLowerCase()) && (w.length - _currentWord.length < 3)
+    //     )
+    //     .slice(0, MAX_SUGGESTIONS)
+    //     .forEach((suggestion) => englishSuggestions.add(suggestion))
+
+    // Add autocorrected words
+
+    const corrections: string[] = spellCheck.correct(2, _currentWord).filter(w => w !== _currentWord) // []
+
+    // console.log("corrections", _currentWord, corrections)
+
+    // corrections.forEach((corrWord) => {
+    //     englishSuggestions.add(corrWord)
+    // })
+
+    // currentSuggestions = [
+    //     [_currentWord, transliterate(_currentWord.toLowerCase())]
+    // ] as Array<Pair>
+
+
+    // searches kn words in corpus and transliterates uncorrected word
+    // TODO search using startsWith as well
+    const wordToTransliterate = _currentWord.toLowerCase();
+
+    const primarySuggestions = possibleSuggestions(wordToTransliterate)
+        // [en] => [ [...[en, kn]] ]
+        .map(word => [_currentWord, word])
+        // [[en, kn]]
+        .slice(0, MAX_SUGGESTIONS - 3);
+
+
+    const secondarySuggestions = corrections
+        .map(en => possibleSuggestions(en).map(word => [en, word]))
+        .flat()
+        .slice(0, MAX_SUGGESTIONS - 4);
+    // TODO enable this only for addresses
+    // (freq_dist as Record<string, number>)
+
+    const abbreviation = !(wordToTransliterate in words) && !(wordToTransliterate in freq_dist)
+        ? [[
+            _currentWord,
+            Array.from(wordToTransliterate).map((letter) => enToKn[letter.toLowerCase()] + '.').join('')
+        ]]
+        : [];
+
+
+    currentSuggestions = [
+        ...primarySuggestions,
+        ...secondarySuggestions,
+        ...abbreviation
+    ] as Array<Pair>;
+
+
+
+    /*
+    if (englishSuggestions.size === 0) {
+
+        currentSuggestions = transliterate(_currentWord.toLowerCase())
             .map(kn => [_currentWord, kn])
             .slice(0, MAX_SUGGESTIONS) as Array<Pair>
+
+
+
     } else {
-        /* :^)  maaduthidene is not working */
-        const trs = _currentWord.startsWith('m') ? (_: string) => [] : transliterate
-        currentSuggestions = (
-            englishSuggestions
-                // TODO fix transliterate return
-                .map(en => [...words[en], ...trs(en)].map(word => [en, word]))
-                .flat()
-                .slice(0, MAX_SUGGESTIONS) as Array<Pair>
-        );
+
+        :^)  maaduthidene is not working 
+
+        // const trs = _currentWord.startsWith('m') ? (_: string) => [] : transliterate
+        currentSuggestions =(Array.from(englishSuggestions)
+            // [en] => [ [...[en, kn]] ]
+            .map(en => possibleSuggestions(en).map(word => [en, word]))
+            // [[en, kn]]
+            .flat()
+            .slice(0, MAX_SUGGESTIONS - 3) as Array<Pair> );
     }
+    */
+
+    // console.log(_currentWord, currentSuggestions)
 
     // TODO improve this code
     suggestionDivs.innerHTML = '';
@@ -214,6 +340,11 @@ function updateTextArea(this: HTMLTextAreaElement, event: KeyboardEvent) {
     const key = event.key;
 
     if (key === 'ArrowUp' || key === 'ArrowDown') {
+
+        // console.log(currentSuggestions.length)
+
+        // TODO puneeth , 4 7 suggests
+        // if selected index > 5, set to 0 when backspacing
         const currArrLen = currentSuggestions?.length > 0 ?
             currentSuggestions.length - 1 :
             0;
@@ -245,16 +376,22 @@ function updateTextArea(this: HTMLTextAreaElement, event: KeyboardEvent) {
             }
         }
     } else if (key === 'Enter' || key === 'Tab' || key === ' ') {
+        // TODO space, tab not added
+
         // console.log(key, this.innerText, _currentWord)
 
         // TODO correct word before transliterating
+        const suggestion = getSuggestion();
+        if (suggestion != null) {
+            this.value += suggestion + " "
 
-        this.value += getSuggestion() + " "
+            // console.log(transliterate(_currentWord));
 
-        // console.log(transliterate(_currentWord));
+            this.selectionStart = this.value.length;
+            _currentWord = ""
+            currentSuggestions = [];
 
-        this.selectionStart = this.value.length;
-        _currentWord = ""
+        }
 
         // if (currentSuggestions.length) {
         // console.log(currentSuggestions, currentSuggestions[selectedIndex])
@@ -273,6 +410,13 @@ function updateTextArea(this: HTMLTextAreaElement, event: KeyboardEvent) {
             this.value = this.value.slice(0, -1);
         }
         updateMenu(_currentWord.slice(0, -1));
+    } else if (key === ',') {
+        // TODO add dot, etc.
+        this.value += ',';
+    } else if (/[\d]/.test(key)) {
+        // TODO st, th, nd, rd
+        const nKey = key as (keyof typeof numerals);
+        this.value += numerals[nKey][0];
     }
 
     // other keydown events will propagate
@@ -294,9 +438,12 @@ function updateTextArea(this: HTMLTextAreaElement, event: KeyboardEvent) {
 inputTextArea.addEventListener('keydown', updateTextArea)
 
 function getSuggestion() {
-    return currentSuggestions[selectedIndex] ?
-        currentSuggestions[selectedIndex][1] :
-        _currentWord;
+    if (currentSuggestions.length) {
+        return currentSuggestions[selectedIndex] ?
+            currentSuggestions[selectedIndex][1] :
+            _currentWord;
+    }
+    return null;
 }
 
 // inputTextArea.addEventListener('keyup', setCurrentWord)

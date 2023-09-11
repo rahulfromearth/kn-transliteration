@@ -1,26 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-
-// https://web.archive.org/web/20220607030126/https://stoi.wordpress.com/2012/12/31/jspell/
-// - shine (India)
-
-// npx ts-node
-
-// npx tsc jspell.ts && node
-
-/* 
-.load jspell.js
-nsc = new NorvigSpellChecker(true)
-nsc = new NorvigSpellChecker(false, 'big.txt')
-
-nsc.curriedKnown(['test', 'word'], ['fail', 'sir'], ['arthur'])
-
-curry(nsc.known)(['test', 'word'], ['fail', 'sir'], ['arthur'])
-
-nsc.correct(2, 'spelling', 'splng')
-*/
-
-const fs = require('fs');
-const computedJson = require('./nwords.json');
+import freq_dist from './word_counts';
 
 type WordFreq = {
     [key: string]: number;
@@ -30,12 +8,7 @@ type CorrectedWord = {
     [key: string]: Array<string>;
 }
 
-// https://stackoverflow.com/a/35117049/6949755
-// https://stackoverflow.com/questions/12995153/apply-not-working-as-expected
-
 function isEmpty(object: WordFreq) {
-    // iterate over keys in object prototype chain
-    // https://stackoverflow.com/questions/13632999/if-key-in-object-or-ifobject-hasownpropertykey
     for (const prop in object) {
         if (object.hasOwnProperty(prop))
             return false;
@@ -43,47 +16,19 @@ function isEmpty(object: WordFreq) {
     return true;
 }
 
-// https://stackoverflow.com/a/35117049/6949755
 function curry<T, U>(fn: Function): (...a: T[]) => U {
     return function (...fnArguments) {
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
         return fn.apply(
             null,
-            // shallow copy
-            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/slice
             Array.prototype.slice.call(fnArguments, 0)
         );
     }
 }
 
 
-class NorvigSpellChecker {
+export class NorvigSpellChecker {
 
     private alphabets = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
-    private NWORDS: WordFreq = {}; // Training Model
-
-    constructor(useComputedJson = false, filePath?: string) {
-
-        if (useComputedJson) {
-            this.NWORDS = computedJson as unknown as WordFreq;
-        } else {
-            const data = fs.readFileSync(filePath, 'utf8');
-            this.train(data);
-        }
-    }
-
-    train = (trainingText: string) => {
-        const filter = /([a-z]+)/g;
-        const features = trainingText.toLowerCase().match(filter) as string[];
-        for (const f in features) {
-            const feature = features[f];
-            if (this.NWORDS.hasOwnProperty(feature)) {
-                this.NWORDS[feature] += 1;
-            } else {
-                this.NWORDS[feature] = 1;
-            }
-        }
-    };
 
     edits1 = (words: string[]): string[] => {
         const edits1Set: string[] = [];
@@ -129,8 +74,8 @@ class NorvigSpellChecker {
             const words = wordsArrays[i];
             for (const word of words) {
                 if (!knownSet.hasOwnProperty(word) &&
-                    this.NWORDS.hasOwnProperty(word)) {
-                    knownSet[word] = this.NWORDS[word];
+                    freq_dist.hasOwnProperty(word)) {
+                    knownSet[word] = (freq_dist as unknown as WordFreq)[word];
                 }
             }
         }
@@ -152,31 +97,18 @@ class NorvigSpellChecker {
         return maxCandidate;
     };
 
-    correct = (n: number, ...words: string[]) => {
+    correct = (n: number, _word: string): string[] => {
+        const word = _word.toLowerCase();
         const corrections: CorrectedWord = {};
-        for (const word of words) {
-            const candidates: WordFreq =
-                curry<Array<string>, WordFreq>(this.known)(
-                    [word],
-                    this.edits1([word]),
-                    this.edits2([word])
-                );
-            // set corrected word with max frequencies in corpus
-            corrections[word] = isEmpty(candidates) ? [word] : this.maxN(candidates, n);
-        }
-        return corrections;
+        const candidates: WordFreq =
+            curry<Array<string>, WordFreq>(this.known)(
+                [word],
+                this.edits1([word]),
+                this.edits2([word])
+            );
+        // set corrected word with max frequencies in corpus
+        corrections[word] = isEmpty(candidates) ? [word] : this.maxN(candidates, n);
+        return corrections[word];
     };
 
 }
-
-// const nsc = new NorvigSpellChecker(false, 'big.txt')
-
-// nsc.known(['test', 'word', 'fail', 'sir', 'arthur'])
-// curry(nsc.known)(['spllg'], ['spell'], ['spells'])
-
-// curry(nsc.known)(['xabel'], ['abel'], ['label']);
-// curry(nsc.known)(['xabel'], ['rabel'], ['label']);
-// curry(nsc.known)(['xabel'], ['rabel'], ['abel']);
-// curry(nsc.known)(['slxlag'], ['sllag'], ['slag']); // no slag in data
-
-// curry(nsc.known)(['test', 'word'], ['fail', 'sir'], ['arthur'])

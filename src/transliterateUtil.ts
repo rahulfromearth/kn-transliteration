@@ -17,6 +17,14 @@ function arrayProduct(...arrays: string[][][]) {
 
 export const transliterate = (enWord: string) => arrayProduct(_getLetters(enWord));
 
+// export const transliterate = (enWord: string) => {
+//     const knLetters = _getLetters(enWord)
+//     const joinedWord = knLetters.map(k => k[0]).join('');
+//     console.log('transliterate', { enWord, knLetters, joinedWord });
+//     return joinedWord;
+// };
+
+
 // TODO rename method
 function _getLetters(data: string) {
 

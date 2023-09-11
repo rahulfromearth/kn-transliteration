@@ -38,6 +38,7 @@ const vowels = {
 
     'e': mapVowels(['e', 'ē']),
     'ae': mapVowels(['e', 'ē']),
+    'ay': mapVowels(['e', 'ē']),
 
     'ai': mapVowels(['ai',]),
 
@@ -46,6 +47,7 @@ const vowels = {
     'ho': mapVowels(['o', 'ō']),
 
     'au': mapVowels(['au']),
+    'ou': mapVowels(['au']),
 };
 
 /**
@@ -85,9 +87,15 @@ const marks = {
     'e': mapDiactrics(['e', 'ē']),
     'ae': mapDiactrics(['e', 'ē']),
 
+    // WTF it's not reading
+    // 'ay': mapDiactrics(['e', 'ē']),
+    'ay': mapDiactrics(['ē']),
+
     'ai': mapDiactrics(['ai',]),
 
-    'o': mapDiactrics(['o', 'ō']),
+    'o': mapDiactrics(['o', 'ō', 'ā']),
+
+    // 'o': mapDiactrics(['o', 'ō']),
     'oh': mapDiactrics(['o', 'ō']),
     'ho': mapDiactrics(['o', 'ō']),
 
@@ -108,9 +116,11 @@ const _isoOther = {
 const mapOther = mapIsoToKannada(_isoOther);
 
 const other = {
+
     "am": mapOther(["ṃ"]),
     // "an": mapOther(["ṃ"]),
-    "um": mapOther(["ṃ"]),
+
+    // "um": mapOther(["ṃ"]),
 
     "ah": mapOther(["ḥ"]),
     // "aha": mapOther(["ḥ"]),
@@ -123,6 +133,13 @@ const other = {
  * CONSONANTS
  */
 // [en ISO transcription] : kn consonant
+
+// type EnLetter = string;
+// type KnLetter = string;
+// {
+
+// }
+
 const _isoConsonants = {
     'k': 'ಕ',
     'kh': 'ಖ',
@@ -165,7 +182,7 @@ const _isoConsonants = {
     'h': 'ಹ',
 
     'ḷ': 'ಳ',
-    'x': 'ಕ್ಷ',
+    'x': 'ಕ್ಷ', // ಎಕ್ಸ
     'jn': 'ಜ್ಞ',
 };
 
@@ -192,44 +209,67 @@ const consonants = {
 
     // carat
     'c': mapConsonants(['c', 'ch', 'k',]),
-    'ch': mapConsonants(['c', 'ch',]),
+    // 'ch': mapConsonants(['c', 'ch', 'k']),
+
+    'ch': mapConsonants(['c', 'k']),
 
 
-    'j': mapConsonants(['j', 'jh',]),
+    'j': mapConsonants(['j',]),
+    // 'j': mapConsonants(['j', 'jh',]),
     'jh': mapConsonants(['j', 'jh',]),
 
 
     // '': mapConsonants(['ñ',]),
 
     'n': mapConsonants(['n',]),
+    'nh': mapConsonants(['n',]),
 
     't': mapConsonants(['ṭ', 'ṭh', 't', 'th',]),
+    'th': mapConsonants(['t', 'th',]),
+
 
     'd': mapConsonants(['ḍ', 'ḍh', 'd', 'dh',]),
 
     'p': mapConsonants(['p', 'ph',]),
+    'f': mapConsonants(['ph',]),
+
 
     'b': mapConsonants(['b', 'bh',]),
+    'bh': mapConsonants(['b', 'bh',]),
 
-    // 'm': mapConsonants(['m',]),
+
+    'm': mapConsonants(['m',]),
+    'mh': mapConsonants(['m',]),
+
+
 
     'y': mapConsonants(['y',]),
 
     'r': mapConsonants(['r',]),
 
-    'l': mapConsonants(['l', 'ḷ',]),
+    // 'l': mapConsonants(['l', 'ḷ',]),
+    'l': mapConsonants(['l',]),
 
     'v': mapConsonants(['v',]),
+    'w': mapConsonants(['v',]),
 
-    's': mapConsonants(['ś', 'ṣ', 's',]),
+
+    // 's': mapConsonants(['ś', 'ṣ', 's',]),
+    's': mapConsonants(['s',]),
 
     'sh': mapConsonants(['ś', 'ṣ', 's',]),
 
 
     'h': mapConsonants(['h',]),
 
-    // z
+    'x': mapConsonants(['x',]),
 
+    // kyu
+    // 'q': mapConsonants(['x',]),
+
+
+    // z
+    // q
     // x
 
 };
@@ -238,7 +278,7 @@ const consonants = {
  * SYMBOLS
  */
 // [English digit] : kn digit
-const _numerals = {
+const numerals = {
     '0': ['೦'],
     '1': ['೧'],
     '2': ['೨'],
@@ -260,7 +300,7 @@ const symbols = {
     // "|": "।",
     // "||": "॥",
 
-    ..._numerals,
+    ...numerals,
 };
 
 
@@ -298,5 +338,6 @@ const kannadaSchema = new Schema<string[][]>(
 const schemaMap = new SchemaMap(englishSchema, kannadaSchema);
 
 export {
-    schemaMap
+    schemaMap,
+    numerals
 };
